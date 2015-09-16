@@ -1,0 +1,84 @@
+#!/bin/sh
+
+# Shell scripts to put out some values to critical Proxy operations data
+# 20140820  cuz we ain't got Splunk....sniff.....
+# 20150908   modified to provide statistics on HTTP Codes to help gain intelligence during connectivity
+ issues
+
+#  USAGE:    sudo ./scriptname /file/path/to/messages*
+#            Example:    sudo ./bash-wsa-HTTP-Code-Summary.sh  /var/log/messages
+#            ALSO be sure to edit the two TIME variables below (TIME1 and TIME2),
+#            AND select the appropriate log file  as an argument
+
+#---------VAR DEFINITION-------
+
+        CMD="sudo cat"
+#       Set the TIME variables to the time slot that you want the data summarized
+#           Note that this should use the log time stamp which in this box is GMT and that
+#           there are two digits after the three letter month plus one space, s
+#           o the 7th would be Sep  7 with two spaces after Sep
+        TIME1="Sep  7 18:00"
+        TIME2="Sep  7 19:00"
+
+
+        SED="sudo sed -n"
+
+#----------END VAR DEF---------
+
+#  the $@ varilable is all the arguments fed to the script, see usage above.
+for i in $@
+do
+
+        # for each array value, get its date of last modification
+        FILE=$i
+
+        DATE=`date -r $FILE +%D`
+
+        echo -ne "\n=============================================================\n"
+        echo -ne "\tHTTP Result Codes Sorted by Count\n"
+        echo -ne "\t(as observed between $TIME1 and $TIME2)\n"
+        echo -ne "=============================================================\n\n"
+
+# First create a smaller file to work off of so analysis can be done for all proxies during
+# the same time period use mktmp to use a temporary directory that can be cleaned up later.
+# The TIMESTAMPS are there so you can tell how long it takes to run each time
+# When done using the script, be sure to clean up the /tmp directory where the temp file is placed
+
+TEMPFILE=`mktemp`
+TIMESTAMP=`date`
+echo -ne "\t$TIMESTAMP - Temp file created:  $TEMPFILE \n"
+TEMPFILEDATA=`ls -la $TEMPFILE`
+echo -ne "\t$TEMPFILEDATA\n"
+echo -ne "\tmoving data into the $TEMPFILE now\n"
+        sed -n '/'"$TIME1"'/,/'"$TIME2"'/p' $FILE > $TEMPFILE
+TIMESTAMP=`date`
+echo -ne "\t$TIMESTAMP - Done moving data into $TEMPFILE\n"
+echo -ne "\t"; ls -la $TEMPFILE
+echo -ne "\n\n"
+
+
+#  now print all the stuff nicely
+ echo -ne "\n----------------------------------\n"
+TIMESTAMP=`date`
+        echo -ne "Proxy-Mexico\t"; echo -ne "File Date:  $DATE, Process Start: $TIMESTAMP\n\n"   ;  cat
+ $FILE | grep "Proxy-Mexico" | awk '{s[$12]++;} END { for(i in s) printf "%15d\t %-30s\n", s[i], i } '
+ | sort -n -r -k 1 | head ; echo -ne "\n----------------------------------\n"
+
+TIMESTAMP=`date`
+        echo -ne "Proxy-LAX\t"; echo -ne "File Date:  $DATE, Process Start: $TIMESTAMP\n\n"   ;  cat $F
+ILE | grep "Proxy-LAX" | awk '{s[$12]++;} END { for(i in s) printf "%15d\t %-30s\n", s[i], i } '  | sor
+t -n -r -k 1 | head ; echo -ne "\n----------------------------------\n"
+TIMESTAMP=`date`
+        echo -ne "Proxy-NJ4\t"; echo -ne "File Date:  $DATE, Process Start: $TIMESTAMP\n\n"   ;  cat $F
+ILE | grep "Proxy-NJ4" | awk '{s[$12]++;} END { for(i in s) printf "%15d\t %-30s\n", s[i], i } '  | sor
+t -n -r -k 1 | head ; echo -ne "\n----------------------------------\n"
+TIMESTAMP=`date`
+        echo -ne "Proxy-Miami\t"; echo -ne "File Date:  $DATE, Process Start: $TIMESTAMP\n\n"   ;  cat
+$FILE | grep "Proxy-Miami" | awk '{s[$12]++;} END { for(i in s) printf "%15d\t %-30s\n", s[i], i } '  |
+ sort -n -r -k 1 | head ; echo -ne "\n----------------------------------\n"
+        echo -ne "Proxy-FL1\t"; echo -ne "File Date:  $DATE, Process Start: $TIMESTAMP\n\n"   ;  cat $F
+ILE | grep "Proxy-FL1" | awk '{s[$12]++;} END { for(i in s) printf "%15d\t %-30s\n", s[i], i } '  | sor
+t -n -r -k 1 | head ; echo -ne "\n----------------------------------\n"
+
+done
+
